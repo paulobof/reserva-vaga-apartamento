@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iCondomínio - Reservas</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; color: #333; padding: 20px; max-width: 900px; margin: 0 auto; }
+        h1 { margin-bottom: 20px; color: #1a5276; }
+        h2 { margin: 20px 0 10px; color: #2c3e50; }
+        a { color: #2980b9; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        .card { background: #fff; border-radius: 8px; padding: 20px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+
+        form.inline { display: flex; gap: 12px; align-items: end; flex-wrap: wrap; }
+        label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+        select, input[type="date"] { padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
+        button { padding: 8px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 600; }
+        .btn-primary { background: #2980b9; color: #fff; }
+        .btn-primary:hover { background: #2471a3; }
+        .btn-danger { background: #e74c3c; color: #fff; }
+        .btn-danger:hover { background: #c0392b; }
+        .btn-warning { background: #f39c12; color: #fff; }
+        .btn-warning:hover { background: #d68910; }
+        .btn-sm { padding: 4px 12px; font-size: 12px; }
+
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #eee; font-size: 14px; }
+        th { background: #f8f9fa; font-weight: 600; color: #555; }
+
+        .status { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+        .status-pending { background: #fef9e7; color: #b7950b; }
+        .status-scheduled { background: #ebf5fb; color: #2471a3; }
+        .status-executing { background: #fdf2e9; color: #ca6f1e; }
+        .status-success { background: #eafaf1; color: #1e8449; }
+        .status-failed { background: #fdedec; color: #c0392b; }
+        .status-cancelled { background: #f2f3f4; color: #7f8c8d; }
+
+        .back { display: inline-block; margin-bottom: 16px; }
+        .actions { display: flex; gap: 8px; }
+    </style>
+</head>
+<body>
+    {% block content %}{% endblock %}
+</body>
+</html>

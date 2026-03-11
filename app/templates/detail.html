@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block content %}
+<a href="/" class="back">&larr; Voltar</a>
+
+<h1>Reserva #{{ reservation.id }}</h1>
+
+<div class="card">
+    <table>
+        <tr><th style="width:150px;">Recurso</th><td>{{ reservation.resource.name }}</td></tr>
+        <tr><th>Data Alvo</th><td>{{ reservation.target_date.strftime('%d/%m/%Y') }}</td></tr>
+        <tr><th>Trigger</th><td>{{ reservation.trigger_date.strftime('%d/%m/%Y') }}</td></tr>
+        <tr><th>Status</th><td><span class="status status-{{ reservation.status }}">{{ reservation.status }}</span></td></tr>
+        <tr><th>Tentativas</th><td>{{ reservation.attempt_count }}</td></tr>
+        <tr><th>Criada em</th><td>{{ reservation.created_at.strftime('%d/%m/%Y %H:%M:%S') }}</td></tr>
+        <tr><th>Atualizada</th><td>{{ reservation.updated_at.strftime('%d/%m/%Y %H:%M:%S') }}</td></tr>
+        {% if reservation.result_message %}
+        <tr><th>Resultado</th><td>{{ reservation.result_message }}</td></tr>
+        {% endif %}
+    </table>
+
+    {% if reservation.status in ('pending', 'scheduled') %}
+    <div style="margin-top:16px; display:flex; gap:8px;">
+        <form action="/reservations/{{ reservation.id }}/execute" method="post">
+            <button type="submit" class="btn-warning">Executar Agora</button>
+        </form>
+        <form action="/reservations/{{ reservation.id }}/cancel" method="post">
+            <button type="submit" class="btn-danger">Cancelar</button>
+        </form>
+    </div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2>Log de Tentativas</h2>
+    {% if reservation.attempt_logs %}
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Horário</th>
+                <th>Etapa</th>
+                <th>OK?</th>
+                <th>Detalhe</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in reservation.attempt_logs %}
+            <tr>
+                <td>{{ log.attempt_number }}</td>
+                <td>{{ log.timestamp.strftime('%H:%M:%S') }}</td>
+                <td>{{ log.step }}</td>
+                <td>{{ '✅' if log.success else '❌' }}</td>
+                <td style="font-size:12px;">
+                    {% if log.error_message %}
+                    <span style="color:#c0392b;">{{ log.error_message[:200] }}</span>
+                    {% elif log.response_snippet %}
+                    {{ log.response_snippet[:200] }}
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="color:#888; padding:20px 0;">Nenhuma tentativa registrada.</p>
+    {% endif %}
+</div>
+{% endblock %}

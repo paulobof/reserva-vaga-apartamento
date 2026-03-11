@@ -1,0 +1,46 @@
+from datetime import date, datetime
+
+from pydantic import BaseModel
+
+
+class ResourceOut(BaseModel):
+    id: int
+    name: str
+    recurso_id: int
+    periodo_id: int
+    hash: str
+
+    model_config = {"from_attributes": True}
+
+
+class ReservationCreate(BaseModel):
+    resource_id: int
+    target_date: date
+
+
+class AttemptLogOut(BaseModel):
+    id: int
+    attempt_number: int
+    timestamp: datetime
+    step: str
+    success: bool
+    response_snippet: str | None
+    error_message: str | None
+
+    model_config = {"from_attributes": True}
+
+
+class ReservationOut(BaseModel):
+    id: int
+    resource_id: int
+    target_date: date
+    trigger_date: date
+    status: str
+    created_at: datetime
+    updated_at: datetime
+    attempt_count: int
+    result_message: str | None
+    resource: ResourceOut | None = None
+    attempt_logs: list[AttemptLogOut] = []
+
+    model_config = {"from_attributes": True}

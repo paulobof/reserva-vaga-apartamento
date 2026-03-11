@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>iCondomínio - Reservas</h1>
+
+<div class="card">
+    <h2>Nova Reserva</h2>
+    <form action="/reservations" method="post" class="inline">
+        <div>
+            <label for="resource_id">Recurso</label>
+            <select name="resource_id" id="resource_id" required>
+                {% for r in resources %}
+                <option value="{{ r.id }}">{{ r.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label for="target_date">Data Desejada</label>
+            <input type="date" name="target_date" id="target_date" required>
+        </div>
+        <div>
+            <button type="submit" class="btn-primary">Agendar</button>
+        </div>
+    </form>
+</div>
+
+<div class="card">
+    <h2>Reservas</h2>
+    {% if reservations %}
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Recurso</th>
+                <th>Data Alvo</th>
+                <th>Trigger</th>
+                <th>Status</th>
+                <th>Tentativas</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for res in reservations %}
+            <tr>
+                <td><a href="/reservations/{{ res.id }}">{{ res.id }}</a></td>
+                <td>{{ res.resource.name if res.resource else '-' }}</td>
+                <td>{{ res.target_date.strftime('%d/%m/%Y') }}</td>
+                <td>{{ res.trigger_date.strftime('%d/%m/%Y') }}</td>
+                <td><span class="status status-{{ res.status }}">{{ res.status }}</span></td>
+                <td>{{ res.attempt_count }}</td>
+                <td class="actions">
+                    <a href="/reservations/{{ res.id }}" class="btn-primary btn-sm" style="color:#fff;text-decoration:none;">Ver</a>
+                    {% if res.status in ('pending', 'scheduled') %}
+                    <form action="/reservations/{{ res.id }}/cancel" method="post" style="margin:0;">
+                        <button type="submit" class="btn-danger btn-sm">Cancelar</button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="color:#888; padding:20px 0;">Nenhuma reserva cadastrada.</p>
+    {% endif %}
+</div>
+{% endblock %}
