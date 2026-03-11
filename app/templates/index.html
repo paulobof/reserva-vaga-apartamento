@@ -62,6 +62,15 @@
                     </label>
                     <input type="date" name="target_date" id="target_date" required min="{{ today }}">
                 </div>
+                <div class="form-group" id="periodo-group" style="display:none;">
+                    <label for="periodo_id">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        Horario
+                    </label>
+                    <select name="periodo_id" id="periodo_id">
+                        <option value="" disabled selected>Selecione um horario...</option>
+                    </select>
+                </div>
                 <div class="form-group">
                     <label for="reason">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/></svg>
@@ -152,6 +161,9 @@
                 </td>
                 <td>
                     <span class="font-semibold">{{ res.resource.name if res.resource else '-' }}</span>
+                    {% if res.periodo_id and period_labels.get(res.periodo_id) and period_labels.get(res.periodo_id) != 'INTEGRAL' %}
+                    <br><span style="font-size:12px; color:var(--text-secondary);">{{ period_labels[res.periodo_id] }}</span>
+                    {% endif %}
                 </td>
                 <td class="nowrap">
                     <span class="font-semibold">{{ res.target_date.strftime('%d/%m/%Y') }}</span>
@@ -212,7 +224,12 @@
                 <a href="/reservations/{{ res.id }}" class="mobile-card-id">#{{ res.id }}</a>
                 <span class="status status-{{ res.status }}">{{ sl(res.status) }}</span>
             </div>
-            <div class="mobile-card-resource">{{ res.resource.name if res.resource else '-' }}</div>
+            <div class="mobile-card-resource">
+                {{ res.resource.name if res.resource else '-' }}
+                {% if res.periodo_id and period_labels.get(res.periodo_id) and period_labels.get(res.periodo_id) != 'INTEGRAL' %}
+                <span style="font-size:13px; color:var(--text-secondary); font-weight:400;"> - {{ period_labels[res.periodo_id] }}</span>
+                {% endif %}
+            </div>
             {% if res.reason %}
             <div style="font-size:13px; color:var(--text-secondary); margin-bottom:6px;">{{ res.reason }}</div>
             {% endif %}
@@ -257,4 +274,35 @@
     </div>
     {% endif %}
 </div>
+
+<script>
+(function() {
+    var resourcePeriods = {{ resource_periods_json | safe }};
+    var resourceSelect = document.getElementById('resource_id');
+    var periodoGroup = document.getElementById('periodo-group');
+    var periodoSelect = document.getElementById('periodo_id');
+
+    resourceSelect.addEventListener('change', function() {
+        var periods = resourcePeriods[this.value] || [];
+        periodoSelect.innerHTML = '<option value="" disabled selected>Selecione um horario...</option>';
+
+        if (periods.length <= 1) {
+            periodoGroup.style.display = 'none';
+            periodoSelect.removeAttribute('required');
+            if (periods.length === 1) {
+                periodoSelect.innerHTML = '<option value="' + periods[0].periodo_id + '" selected>' + periods[0].label + '</option>';
+            }
+        } else {
+            periods.forEach(function(p) {
+                var opt = document.createElement('option');
+                opt.value = p.periodo_id;
+                opt.textContent = p.label;
+                periodoSelect.appendChild(opt);
+            });
+            periodoGroup.style.display = '';
+            periodoSelect.setAttribute('required', '');
+        }
+    });
+})();
+</script>
 {% endblock %}

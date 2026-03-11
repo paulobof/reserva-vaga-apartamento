@@ -1,4 +1,5 @@
 import asyncio
+import json
 import logging
 from collections import Counter
 from datetime import date
@@ -11,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.database import get_db
-from app.models import Reservation, Resource
+from app.models import Period, Reservation, Resource
 from app.services.scheduler import (
     compute_trigger_date,
     is_within_window,
@@ -39,6 +40,7 @@ FLASH_MESSAGES = {
     "cancelled": ("Reserva cancelada.", "success"),
     "executing": ("Execucao iniciada.", "success"),
     "invalid_date": ("Data invalida. Selecione uma data futura.", "error"),
+    "missing_period": ("Selecione um horario para este recurso.", "error"),
 }
 
 
@@ -48,7 +50,9 @@ async def index(
     msg: str = Query(None),
     db: AsyncSession = Depends(get_db),
 ):
-    resources = (await db.execute(select(Resource))).scalars().all()
+    resources = (
+        (await db.execute(select(Resource).options(selectinload(Resource.periods)))).scalars().all()
+    )
     reservations = (
         (
             await db.execute(
@@ -62,6 +66,17 @@ async def index(
     )
 
     flash_message, flash_type = FLASH_MESSAGES.get(msg, (None, None))
+
+    # JSON com períodos por recurso para o JS do frontend
+    resource_periods = {
+        r.id: [{"periodo_id": p.periodo_id, "label": p.label} for p in r.periods] for r in resources
+    }
+
+    # Mapa periodo_id -> label para exibição na lista
+    period_labels = {}
+    for r in resources:
+        for p in r.periods:
+            period_labels[p.periodo_id] = p.label
 
     today = date.today()
     status_counts = Counter(r.status for r in reservations)
@@ -77,6 +92,8 @@ async def index(
             "flash_type": flash_type,
             "status_counts": status_counts,
             "total_count": len(reservations),
+            "resource_periods_json": json.dumps(resource_periods),
+            "period_labels": period_labels,
         },
     )
 
@@ -86,10 +103,22 @@ async def create_reservation(
     resource_id: int = Form(...),
     target_date: date = Form(...),
     reason: str = Form(""),
+    periodo_id: int = Form(None),
     db: AsyncSession = Depends(get_db),
 ):
     if target_date <= date.today():
         return RedirectResponse(url="/?msg=invalid_date", status_code=303)
+
+    # Buscar períodos do recurso para validação
+    periods = (
+        (await db.execute(select(Period).where(Period.resource_id == resource_id))).scalars().all()
+    )
+
+    if len(periods) == 1:
+        # Recurso INTEGRAL: auto-preencher
+        periodo_id = periods[0].periodo_id
+    elif len(periods) > 1 and not periodo_id:
+        return RedirectResponse(url="/?msg=missing_period", status_code=303)
 
     trigger = compute_trigger_date(target_date)
 
@@ -106,18 +135,20 @@ async def create_reservation(
         trigger_date=trigger,
         status=status,
         reason=reason.strip() or None,
+        periodo_id=periodo_id,
     )
     db.add(reservation)
     await db.commit()
     await db.refresh(reservation)
 
     logger.info(
-        "Created reservation #%d: resource=%d, target=%s, trigger=%s, status=%s",
+        "Created reservation #%d: resource=%d, target=%s, trigger=%s, status=%s, periodo=%s",
         reservation.id,
         resource_id,
         target_date,
         trigger,
         status,
+        periodo_id,
     )
 
     if status == "pending":
@@ -142,9 +173,23 @@ async def detail(
     if not reservation:
         return RedirectResponse(url="/")
 
+    # Buscar label do período
+    periodo_label = None
+    if reservation.periodo_id:
+        period = (
+            await db.execute(
+                select(Period).where(
+                    Period.resource_id == reservation.resource_id,
+                    Period.periodo_id == reservation.periodo_id,
+                )
+            )
+        ).scalar_one_or_none()
+        if period:
+            periodo_label = period.label
+
     return templates.TemplateResponse(
         "detail.html",
-        {"request": request, "reservation": reservation},
+        {"request": request, "reservation": reservation, "periodo_label": periodo_label},
     )
 
 

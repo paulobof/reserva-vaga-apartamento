@@ -3,12 +3,22 @@ from datetime import date, datetime
 from pydantic import BaseModel
 
 
+class PeriodOut(BaseModel):
+    id: int
+    resource_id: int
+    periodo_id: int
+    label: str
+
+    model_config = {"from_attributes": True}
+
+
 class ResourceOut(BaseModel):
     id: int
     name: str
     recurso_id: int
     periodo_id: int
     hash: str | None = None
+    periods: list[PeriodOut] = []
 
     model_config = {"from_attributes": True}
 
@@ -17,6 +27,7 @@ class ReservationCreate(BaseModel):
     resource_id: int
     target_date: date
     reason: str = ""
+    periodo_id: int | None = None
 
 
 class AttemptLogOut(BaseModel):
@@ -41,6 +52,7 @@ class ReservationOut(BaseModel):
     updated_at: datetime
     attempt_count: int
     reason: str | None = None
+    periodo_id: int | None = None
     result_message: str | None = None
     resource: ResourceOut | None = None
     attempt_logs: list[AttemptLogOut] = []

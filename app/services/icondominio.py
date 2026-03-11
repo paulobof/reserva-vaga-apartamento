@@ -392,11 +392,12 @@ class ICondominioClient:
             attempt_extra = {**res_extra, "attempt": attempt}
 
             try:
+                periodo_id = reservation.periodo_id or resource.periodo_id
                 available, fields = await self.get_condicao(
                     cookies,
                     reservation.target_date,
                     resource.recurso_id,
-                    resource.periodo_id,
+                    periodo_id,
                 )
                 if not available:
                     await self._log_attempt(

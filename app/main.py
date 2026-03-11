@@ -11,7 +11,7 @@ from app.config import settings
 from app.database import async_session, engine
 from app.logging_config import setup_logging
 from app.middleware import ObservabilityMiddleware
-from app.models import SEED_RESOURCES, Base, Resource
+from app.models import SEED_PERIODS, SEED_RESOURCES, Base, Period, Resource
 from app.routers.reservations import router
 from app.services.scheduler import scheduler, start_scheduler, stop_scheduler
 
@@ -72,6 +72,23 @@ async def init_db() -> None:
             await conn.execute(text("ALTER TABLE reservations ADD COLUMN reason VARCHAR(200)"))
             logger.info("Migrated reservations: added reason column")
 
+    # Migrar: adicionar coluna periodo_id em reservations se não existir
+    async with engine.begin() as conn:
+        result = await conn.execute(text("PRAGMA table_info(reservations)"))
+        columns = [c[1] for c in result.fetchall()]
+        if (
+            "reservations"
+            in [
+                t[0]
+                for t in (
+                    await conn.execute(text("SELECT name FROM sqlite_master WHERE type='table'"))
+                ).fetchall()
+            ]
+            and "periodo_id" not in columns
+        ):
+            await conn.execute(text("ALTER TABLE reservations ADD COLUMN periodo_id INTEGER"))
+            logger.info("Migrated reservations: added periodo_id column")
+
     async with async_session() as db:
         existing = (await db.execute(select(Resource.id))).scalars().all()
         existing_ids = set(existing)
@@ -90,6 +107,24 @@ async def init_db() -> None:
         if added:
             await db.commit()
             logger.info("Seeded %d new resources (total: %d)", added, len(SEED_RESOURCES))
+
+        # Seed periods
+        existing_periods = (await db.execute(select(Period.resource_id, Period.periodo_id))).all()
+        existing_period_set = {(r, p) for r, p in existing_periods}
+        added_periods = 0
+        for p in SEED_PERIODS:
+            if (p.resource_id, p.periodo_id) not in existing_period_set:
+                db.add(
+                    Period(
+                        resource_id=p.resource_id,
+                        periodo_id=p.periodo_id,
+                        label=p.label,
+                    )
+                )
+                added_periods += 1
+        if added_periods:
+            await db.commit()
+            logger.info("Seeded %d new periods", added_periods)
 
 
 @asynccontextmanager
