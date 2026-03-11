@@ -33,6 +33,7 @@ class Reservation(Base):
         DateTime, server_default=func.now(), onupdate=func.now()
     )
     attempt_count: Mapped[int] = mapped_column(Integer, default=0)
+    reason: Mapped[str | None] = mapped_column(String(200), nullable=True)
     result_message: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     resource: Mapped["Resource"] = relationship(back_populates="reservations")

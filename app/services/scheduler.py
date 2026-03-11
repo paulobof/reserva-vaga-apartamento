@@ -90,9 +90,10 @@ async def run_reservation(reservation_id: int):
                 f"{status_emoji} Reserva #{reservation.id}\n"
                 f"Recurso: {resource.name}\n"
                 f"Data: {reservation.target_date.strftime('%d/%m/%Y')}\n"
-                f"Status: {reservation.status}\n"
-                f"Tentativas: {reservation.attempt_count}"
             )
+            if reservation.reason:
+                msg += f"Motivo: {reservation.reason}\n"
+            msg += f"Status: {reservation.status}\nTentativas: {reservation.attempt_count}"
             if reservation.result_message:
                 msg += f"\nMensagem: {reservation.result_message}"
 

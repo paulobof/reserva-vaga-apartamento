@@ -8,6 +8,7 @@
     <table>
         <tr><th style="width:150px;">Recurso</th><td>{{ reservation.resource.name }}</td></tr>
         <tr><th>Data Alvo</th><td>{{ reservation.target_date.strftime('%d/%m/%Y') }}</td></tr>
+        <tr><th>Motivo</th><td>{{ reservation.reason or '-' }}</td></tr>
         <tr><th>Trigger</th><td>{{ reservation.trigger_date.strftime('%d/%m/%Y') }}</td></tr>
         <tr><th>Status</th><td><span class="status status-{{ reservation.status }}">{{ reservation.status }}</span></td></tr>
         <tr><th>Tentativas</th><td>{{ reservation.attempt_count }}</td></tr>

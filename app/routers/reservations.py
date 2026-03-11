@@ -54,6 +54,7 @@ async def index(request: Request, db: AsyncSession = Depends(get_db)):
 async def create_reservation(
     resource_id: int = Form(...),
     target_date: date = Form(...),
+    reason: str = Form(""),
     db: AsyncSession = Depends(get_db),
 ):
     if target_date <= date.today():
@@ -76,6 +77,7 @@ async def create_reservation(
         target_date=target_date,
         trigger_date=trigger,
         status=status,
+        reason=reason.strip() or None,
     )
     db.add(reservation)
     await db.commit()

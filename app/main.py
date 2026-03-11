@@ -55,6 +55,23 @@ async def init_db() -> None:
         if "resources" in [t[0] for t in tables.fetchall()]:
             await _migrate_hash_nullable(conn)
 
+    # Migrar: adicionar coluna reason em reservations se não existir
+    async with engine.begin() as conn:
+        result = await conn.execute(text("PRAGMA table_info(reservations)"))
+        columns = [c[1] for c in result.fetchall()]
+        if (
+            "reservations"
+            in [
+                t[0]
+                for t in (
+                    await conn.execute(text("SELECT name FROM sqlite_master WHERE type='table'"))
+                ).fetchall()
+            ]
+            and "reason" not in columns
+        ):
+            await conn.execute(text("ALTER TABLE reservations ADD COLUMN reason VARCHAR(200)"))
+            logger.info("Migrated reservations: added reason column")
+
     async with async_session() as db:
         existing = (await db.execute(select(Resource.id))).scalars().all()
         existing_ids = set(existing)

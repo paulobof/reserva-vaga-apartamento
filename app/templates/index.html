@@ -18,6 +18,10 @@
             <input type="date" name="target_date" id="target_date" required min="{{ today }}" value="{{ today[:4] }}-">
         </div>
         <div>
+            <label for="reason">Motivo</label>
+            <input type="text" name="reason" id="reason" placeholder="Ex: Aniversário do João" maxlength="200">
+        </div>
+        <div>
             <button type="submit" class="btn-primary">Agendar</button>
         </div>
     </form>
@@ -32,6 +36,7 @@
                 <th>#</th>
                 <th>Recurso</th>
                 <th>Data Alvo</th>
+                <th>Motivo</th>
                 <th>Trigger</th>
                 <th>Status</th>
                 <th>Tentativas</th>
@@ -44,6 +49,7 @@
                 <td><a href="/reservations/{{ res.id }}">{{ res.id }}</a></td>
                 <td>{{ res.resource.name if res.resource else '-' }}</td>
                 <td>{{ res.target_date.strftime('%d/%m/%Y') }}</td>
+                <td>{{ res.reason or '-' }}</td>
                 <td>{{ res.trigger_date.strftime('%d/%m/%Y') }}</td>
                 <td><span class="status status-{{ res.status }}">{{ res.status }}</span></td>
                 <td>{{ res.attempt_count }}</td>
