@@ -20,15 +20,15 @@ scheduler = AsyncIOScheduler(timezone=SP_TZ)
 
 
 async def nightly_check():
-    """Called daily at 23:55 SP time. Finds reservations triggered today."""
+    """Called daily at 23:55 SP time. Finds scheduled reservations to trigger."""
     today = date.today()
-    logger.info("Nightly check for trigger_date=%s", today)
+    logger.info("Nightly check for trigger_date <= %s", today)
 
     async with async_session() as db:
         result = await db.execute(
             select(Reservation)
             .options(selectinload(Reservation.resource))
-            .where(Reservation.trigger_date == today, Reservation.status == "scheduled")
+            .where(Reservation.trigger_date <= today, Reservation.status == "scheduled")
         )
         reservations = result.scalars().all()
 
@@ -107,10 +107,17 @@ def compute_trigger_date(target_date: date) -> date:
 
 
 def is_within_window(target_date: date) -> bool:
-    """Check if target_date is within 90-day reservation window (today counts)."""
+    """Check if target_date is already available (< 90 days, window already open)."""
     today = date.today()
     delta = (target_date - today).days
-    return 0 < delta <= 90
+    return 0 < delta < 90
+
+
+def opens_tonight(target_date: date) -> bool:
+    """Check if target_date window opens tonight at midnight (exactly 90 days)."""
+    today = date.today()
+    delta = (target_date - today).days
+    return delta == 90
 
 
 def start_scheduler():

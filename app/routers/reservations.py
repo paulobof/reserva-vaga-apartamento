@@ -14,6 +14,7 @@ from app.models import Reservation, Resource
 from app.services.scheduler import (
     compute_trigger_date,
     is_within_window,
+    opens_tonight,
     run_reservation,
 )
 
@@ -51,30 +52,37 @@ async def create_reservation(
     db: AsyncSession = Depends(get_db),
 ):
     trigger = compute_trigger_date(target_date)
-    within_window = is_within_window(target_date)
+
+    if is_within_window(target_date):
+        # Window already open (< 90 days) → execute immediately
+        status = "pending"
+    elif opens_tonight(target_date):
+        # Window opens tonight at midnight (exactly 90 days) → nightly cron picks it up
+        status = "scheduled"
+    else:
+        # Future date (> 90 days) → wait for trigger_date
+        status = "scheduled"
 
     reservation = Reservation(
         resource_id=resource_id,
         target_date=target_date,
         trigger_date=trigger,
-        status="scheduled" if not within_window else "pending",
+        status=status,
     )
     db.add(reservation)
     await db.commit()
     await db.refresh(reservation)
 
     logger.info(
-        "Created reservation #%d: resource=%d, target=%s, trigger=%s, within_window=%s",
+        "Created reservation #%d: resource=%d, target=%s, trigger=%s, status=%s",
         reservation.id,
         resource_id,
         target_date,
         trigger,
-        within_window,
+        status,
     )
 
-    if within_window:
-        reservation.status = "pending"
-        await db.commit()
+    if status == "pending":
         asyncio.create_task(run_reservation(reservation.id))
         logger.info("Reservation #%d executing immediately (within window)", reservation.id)
 
