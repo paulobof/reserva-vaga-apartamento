@@ -41,7 +41,12 @@ async def index(request: Request, db: AsyncSession = Depends(get_db)):
 
     return templates.TemplateResponse(
         "index.html",
-        {"request": request, "resources": resources, "reservations": reservations},
+        {
+            "request": request,
+            "resources": resources,
+            "reservations": reservations,
+            "today": date.today().isoformat(),
+        },
     )
 
 
@@ -51,6 +56,9 @@ async def create_reservation(
     target_date: date = Form(...),
     db: AsyncSession = Depends(get_db),
 ):
+    if target_date <= date.today():
+        return RedirectResponse(url="/", status_code=303)
+
     trigger = compute_trigger_date(target_date)
 
     if is_within_window(target_date):
