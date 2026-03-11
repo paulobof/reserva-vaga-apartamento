@@ -19,26 +19,60 @@ setup_logging()
 logger = logging.getLogger("icond")
 
 
+async def _migrate_hash_nullable(conn) -> None:
+    """Migra coluna hash de NOT NULL para nullable (SQLite não suporta ALTER COLUMN)."""
+    result = await conn.execute(text("PRAGMA table_info(resources)"))
+    columns = result.fetchall()
+    hash_col = next((c for c in columns if c[1] == "hash"), None)
+    if hash_col and hash_col[3] == 1:  # notnull=1 → precisa migrar
+        await conn.execute(
+            text(
+                "CREATE TABLE resources_new ("
+                "id INTEGER PRIMARY KEY, "
+                "name VARCHAR(100) NOT NULL, "
+                "recurso_id INTEGER NOT NULL, "
+                "periodo_id INTEGER NOT NULL, "
+                "hash VARCHAR(64))"
+            )
+        )
+        await conn.execute(
+            text(
+                "INSERT INTO resources_new "
+                "SELECT id, name, recurso_id, periodo_id, hash FROM resources"
+            )
+        )
+        await conn.execute(text("DROP TABLE resources"))
+        await conn.execute(text("ALTER TABLE resources_new RENAME TO resources"))
+        logger.info("Migrated resources.hash to nullable")
+
+
 async def init_db() -> None:
-    """Cria tabelas e insere seed data de recursos se necessário."""
+    """Cria tabelas, aplica migrações e insere seed data de recursos."""
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        # Migrar hash para nullable se DB já existia com schema antigo
+        tables = await conn.execute(text("SELECT name FROM sqlite_master WHERE type='table'"))
+        if "resources" in [t[0] for t in tables.fetchall()]:
+            await _migrate_hash_nullable(conn)
 
     async with async_session() as db:
-        result = await db.execute(select(Resource))
-        if not result.scalars().first():
-            for r in SEED_RESOURCES:
+        existing = (await db.execute(select(Resource.id))).scalars().all()
+        existing_ids = set(existing)
+        added = 0
+        for r in SEED_RESOURCES:
+            if r.id not in existing_ids:
                 db.add(
                     Resource(
                         id=r.id,
                         name=r.name,
                         recurso_id=r.recurso_id,
                         periodo_id=r.periodo_id,
-                        hash=r.hash,
                     )
                 )
+                added += 1
+        if added:
             await db.commit()
-            logger.info("Seeded %d resources", len(SEED_RESOURCES))
+            logger.info("Seeded %d new resources (total: %d)", added, len(SEED_RESOURCES))
 
 
 @asynccontextmanager

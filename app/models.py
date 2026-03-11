@@ -57,18 +57,17 @@ class AttemptLog(Base):
 
 
 SEED_RESOURCES = [
+    Resource(id=1, name="Salão de Festas Adulto", recurso_id=2564, periodo_id=9894),
+    Resource(id=2, name="Churrasqueira com Forno de Pizza", recurso_id=2563, periodo_id=9894),
+    Resource(id=3, name="Salão de Festas Infantil", recurso_id=2565, periodo_id=9894),
+    Resource(id=4, name="Home Cinema", recurso_id=2625, periodo_id=9894),
+    Resource(id=5, name="Garage Band", recurso_id=2626, periodo_id=9894),
+    Resource(id=6, name="Spa - Hidromassagem", recurso_id=5, periodo_id=9894),
+    Resource(id=7, name="Pet Care - Ducha 1", recurso_id=3851, periodo_id=9894),
+    Resource(id=8, name="Pet Care - Ducha 2", recurso_id=3883, periodo_id=9894),
+    Resource(id=9, name="Pet Care - Ducha 3", recurso_id=3989, periodo_id=9894),
     Resource(
-        id=1,
-        name="Salão de Festas Adulto",
-        recurso_id=2564,
-        periodo_id=9894,
-        hash="408C0696FD239968B9ED0E9E2B025EF1",
+        id=10, name="Espaço Beauty - Cadeira Cabeleireiro 2", recurso_id=3885, periodo_id=9894
     ),
-    Resource(
-        id=2,
-        name="Churrasqueira com Forno de Pizza",
-        recurso_id=2563,
-        periodo_id=9894,
-        hash="1A54252C8EDBF114D22B3CC29251B424",
-    ),
+    Resource(id=11, name="Espaço Beauty - Manicure", recurso_id=3886, periodo_id=9894),
 ]
