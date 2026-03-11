@@ -8,7 +8,7 @@ class ResourceOut(BaseModel):
     name: str
     recurso_id: int
     periodo_id: int
-    hash: str
+    hash: str | None = None
 
     model_config = {"from_attributes": True}
 
@@ -16,6 +16,7 @@ class ResourceOut(BaseModel):
 class ReservationCreate(BaseModel):
     resource_id: int
     target_date: date
+    reason: str = ""
 
 
 class AttemptLogOut(BaseModel):
@@ -39,7 +40,8 @@ class ReservationOut(BaseModel):
     created_at: datetime
     updated_at: datetime
     attempt_count: int
-    result_message: str | None
+    reason: str | None = None
+    result_message: str | None = None
     resource: ResourceOut | None = None
     attempt_logs: list[AttemptLogOut] = []
 

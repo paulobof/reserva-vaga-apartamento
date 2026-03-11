@@ -69,7 +69,7 @@
                         <a href="/reservations/{{ res.id }}" class="btn btn-outline btn-sm">Ver</a>
                         {% if res.status in ('pending', 'scheduled') %}
                         <button type="button" class="btn btn-danger btn-sm"
-                            onclick="confirmAction('/reservations/{{ res.id }}/cancel', 'Cancelar Reserva', 'Tem certeza que deseja cancelar a reserva #{{ res.id }} ({{ res.resource.name }}) para {{ res.target_date.strftime(\'%d/%m/%Y\') }}?')">
+                            onclick="confirmAction('/reservations/{{ res.id }}/cancel', 'Cancelar Reserva', 'Tem certeza que deseja cancelar a reserva #{{ res.id }} ({{ res.resource.name }})?')">
                             Cancelar
                         </button>
                         {% endif %}
