@@ -1,72 +1,91 @@
 {% extends "base.html" %}
+{% block title %}iCond - Reservas{% endblock %}
 {% block content %}
-<h1>iCondomínio - Reservas</h1>
+<h1>Reservas</h1>
 
 <div class="card">
-    <h2>Nova Reserva</h2>
-    <form action="/reservations" method="post" class="inline">
-        <div>
-            <label for="resource_id">Recurso</label>
-            <select name="resource_id" id="resource_id" required>
-                {% for r in resources %}
-                <option value="{{ r.id }}">{{ r.name }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div>
-            <label for="target_date">Data Desejada</label>
-            <input type="date" name="target_date" id="target_date" required min="{{ today }}" value="{{ today[:4] }}-">
-        </div>
-        <div>
-            <label for="reason">Motivo</label>
-            <input type="text" name="reason" id="reason" placeholder="Ex: Aniversário do João" maxlength="200">
-        </div>
-        <div>
-            <button type="submit" class="btn-primary">Agendar</button>
+    <div class="card-header">
+        <h2>Nova Reserva</h2>
+    </div>
+    <form action="/reservations" method="post" class="submit-form">
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="resource_id">Recurso</label>
+                <select name="resource_id" id="resource_id" required>
+                    {% for r in resources %}
+                    <option value="{{ r.id }}">{{ r.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="target_date">Data Desejada</label>
+                <input type="date" name="target_date" id="target_date" required min="{{ today }}" value="{{ today[:4] }}-">
+            </div>
+            <div class="form-group">
+                <label for="reason">Motivo <span class="optional">(opcional)</span></label>
+                <input type="text" name="reason" id="reason" placeholder="Ex: Aniversario do Joao" maxlength="200">
+            </div>
+            <div class="form-group">
+                <button type="submit" class="btn-primary" style="margin-top:auto;">Agendar Reserva</button>
+            </div>
         </div>
     </form>
 </div>
 
 <div class="card">
-    <h2>Reservas</h2>
+    <div class="card-header">
+        <h2>Minhas Reservas</h2>
+        {% if reservations %}
+        <span style="color:var(--text-secondary); font-size:13px;">{{ reservations|length }} reserva{{ 's' if reservations|length > 1 else '' }}</span>
+        {% endif %}
+    </div>
     {% if reservations %}
+    <div class="table-wrap">
     <table>
         <thead>
             <tr>
                 <th>#</th>
                 <th>Recurso</th>
-                <th>Data Alvo</th>
+                <th>Data</th>
                 <th>Motivo</th>
                 <th>Trigger</th>
                 <th>Status</th>
-                <th>Tentativas</th>
-                <th>Ações</th>
+                <th>Tent.</th>
+                <th></th>
             </tr>
         </thead>
         <tbody>
             {% for res in reservations %}
             <tr>
-                <td><a href="/reservations/{{ res.id }}">{{ res.id }}</a></td>
+                <td><a href="/reservations/{{ res.id }}" style="font-weight:600;">#{{ res.id }}</a></td>
                 <td>{{ res.resource.name if res.resource else '-' }}</td>
-                <td>{{ res.target_date.strftime('%d/%m/%Y') }}</td>
+                <td style="white-space:nowrap;">{{ res.target_date.strftime('%d/%m/%Y') }}</td>
                 <td>{{ res.reason or '-' }}</td>
-                <td>{{ res.trigger_date.strftime('%d/%m/%Y') }}</td>
+                <td style="white-space:nowrap;">{{ res.trigger_date.strftime('%d/%m/%Y') }}</td>
                 <td><span class="status status-{{ res.status }}">{{ res.status }}</span></td>
                 <td>{{ res.attempt_count }}</td>
-                <td class="actions">
-                    <a href="/reservations/{{ res.id }}" class="btn-primary btn-sm" style="color:#fff;text-decoration:none;">Ver</a>
-                    {% if res.status in ('pending', 'scheduled') %}
-                    <form action="/reservations/{{ res.id }}/cancel" method="post" style="margin:0;">
-                        <button type="submit" class="btn-danger btn-sm">Cancelar</button>
-                    </form>
-                    {% endif %}
+                <td>
+                    <div class="actions">
+                        <a href="/reservations/{{ res.id }}" class="btn btn-outline btn-sm">Ver</a>
+                        {% if res.status in ('pending', 'scheduled') %}
+                        <button type="button" class="btn btn-danger btn-sm"
+                            onclick="confirmAction('/reservations/{{ res.id }}/cancel', 'Cancelar Reserva', 'Tem certeza que deseja cancelar a reserva #{{ res.id }} ({{ res.resource.name }}) para {{ res.target_date.strftime(\'%d/%m/%Y\') }}?')">
+                            Cancelar
+                        </button>
+                        {% endif %}
+                    </div>
                 </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
+    </div>
     {% else %}
-    <p style="color:#888; padding:20px 0;">Nenhuma reserva cadastrada.</p>
+    <div class="empty-state">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <p>Nenhuma reserva cadastrada.</p>
+        <p style="font-size:13px; margin-top:4px;">Use o formulario acima para agendar sua primeira reserva.</p>
+    </div>
     {% endif %}
 </div>
 {% endblock %}

@@ -1,16 +1,25 @@
 {% extends "base.html" %}
+{% block title %}Reserva #{{ reservation.id }} - iCond{% endblock %}
 {% block content %}
-<a href="/" class="back">&larr; Voltar</a>
+<a href="/" class="back-link">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+    Voltar
+</a>
 
 <h1>Reserva #{{ reservation.id }}</h1>
 
 <div class="card">
-    <table>
-        <tr><th style="width:150px;">Recurso</th><td>{{ reservation.resource.name }}</td></tr>
-        <tr><th>Data Alvo</th><td>{{ reservation.target_date.strftime('%d/%m/%Y') }}</td></tr>
-        <tr><th>Motivo</th><td>{{ reservation.reason or '-' }}</td></tr>
+    <table class="detail-table">
+        <tr><th>Recurso</th><td>{{ reservation.resource.name }}</td></tr>
+        <tr><th>Data Alvo</th><td style="font-weight:600;">{{ reservation.target_date.strftime('%d/%m/%Y') }}</td></tr>
+        {% if reservation.reason %}
+        <tr><th>Motivo</th><td>{{ reservation.reason }}</td></tr>
+        {% endif %}
         <tr><th>Trigger</th><td>{{ reservation.trigger_date.strftime('%d/%m/%Y') }}</td></tr>
-        <tr><th>Status</th><td><span class="status status-{{ reservation.status }}">{{ reservation.status }}</span></td></tr>
+        <tr>
+            <th>Status</th>
+            <td><span class="status status-{{ reservation.status }}">{{ reservation.status }}</span></td>
+        </tr>
         <tr><th>Tentativas</th><td>{{ reservation.attempt_count }}</td></tr>
         <tr><th>Criada em</th><td>{{ reservation.created_at.strftime('%d/%m/%Y %H:%M:%S') }}</td></tr>
         <tr><th>Atualizada</th><td>{{ reservation.updated_at.strftime('%d/%m/%Y %H:%M:%S') }}</td></tr>
@@ -20,27 +29,34 @@
     </table>
 
     {% if reservation.status in ('pending', 'scheduled') %}
-    <div style="margin-top:16px; display:flex; gap:8px;">
-        <form action="/reservations/{{ reservation.id }}/execute" method="post">
-            <button type="submit" class="btn-warning">Executar Agora</button>
+    <div class="info-actions">
+        <form action="/reservations/{{ reservation.id }}/execute" method="post" class="submit-form">
+            <button type="submit" class="btn btn-warning btn-sm">Executar Agora</button>
         </form>
-        <form action="/reservations/{{ reservation.id }}/cancel" method="post">
-            <button type="submit" class="btn-danger">Cancelar</button>
-        </form>
+        <button type="button" class="btn btn-danger btn-sm"
+            onclick="confirmAction('/reservations/{{ reservation.id }}/cancel', 'Cancelar Reserva', 'Tem certeza que deseja cancelar esta reserva?')">
+            Cancelar
+        </button>
     </div>
     {% endif %}
 </div>
 
 <div class="card">
-    <h2>Log de Tentativas</h2>
+    <div class="card-header">
+        <h2>Log de Tentativas</h2>
+        {% if reservation.attempt_logs %}
+        <span style="color:var(--text-secondary); font-size:13px;">{{ reservation.attempt_logs|length }} registro{{ 's' if reservation.attempt_logs|length > 1 else '' }}</span>
+        {% endif %}
+    </div>
     {% if reservation.attempt_logs %}
+    <div class="table-wrap">
     <table>
         <thead>
             <tr>
                 <th>#</th>
-                <th>Horário</th>
+                <th>Horario</th>
                 <th>Etapa</th>
-                <th>OK?</th>
+                <th>Status</th>
                 <th>Detalhe</th>
             </tr>
         </thead>
@@ -48,22 +64,34 @@
             {% for log in reservation.attempt_logs %}
             <tr>
                 <td>{{ log.attempt_number }}</td>
-                <td>{{ log.timestamp.strftime('%H:%M:%S') }}</td>
-                <td>{{ log.step }}</td>
-                <td>{{ '✅' if log.success else '❌' }}</td>
-                <td style="font-size:12px;">
+                <td style="white-space:nowrap;">{{ log.timestamp.strftime('%H:%M:%S') }}</td>
+                <td><span style="font-weight:500;">{{ log.step }}</span></td>
+                <td>
+                    {% if log.success %}
+                    <span class="log-success" title="Sucesso">&#10003;</span>
+                    {% else %}
+                    <span class="log-error" title="Falha">&#10007;</span>
+                    {% endif %}
+                </td>
+                <td>
                     {% if log.error_message %}
-                    <span style="color:#c0392b;">{{ log.error_message[:200] }}</span>
+                    <span class="log-error">{{ log.error_message[:200] }}</span>
                     {% elif log.response_snippet %}
-                    {{ log.response_snippet[:200] }}
+                    <span class="log-snippet">{{ log.response_snippet[:200] }}</span>
+                    {% else %}
+                    <span style="color:#CBD5E1;">-</span>
                     {% endif %}
                 </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
+    </div>
     {% else %}
-    <p style="color:#888; padding:20px 0;">Nenhuma tentativa registrada.</p>
+    <div class="empty-state">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        <p>Nenhuma tentativa registrada.</p>
+    </div>
     {% endif %}
 </div>
 {% endblock %}
