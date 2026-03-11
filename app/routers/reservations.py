@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from collections import Counter
 from datetime import date
 
 from fastapi import APIRouter, Depends, Form, Query, Request
@@ -22,6 +23,16 @@ logger = logging.getLogger("icond.router")
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
+
+STATUS_LABELS = {
+    "pending": "Pendente",
+    "scheduled": "Agendado",
+    "executing": "Executando",
+    "success": "Concluido",
+    "failed": "Falhou",
+    "cancelled": "Cancelado",
+}
+templates.env.globals["sl"] = lambda s: STATUS_LABELS.get(s, s)
 
 FLASH_MESSAGES = {
     "created": ("Reserva agendada com sucesso!", "success"),
@@ -52,15 +63,20 @@ async def index(
 
     flash_message, flash_type = FLASH_MESSAGES.get(msg, (None, None))
 
+    today = date.today()
+    status_counts = Counter(r.status for r in reservations)
     return templates.TemplateResponse(
         "index.html",
         {
             "request": request,
             "resources": resources,
             "reservations": reservations,
-            "today": date.today().isoformat(),
+            "today": today.isoformat(),
+            "today_date": today,
             "flash_message": flash_message,
             "flash_type": flash_type,
+            "status_counts": status_counts,
+            "total_count": len(reservations),
         },
     )
 

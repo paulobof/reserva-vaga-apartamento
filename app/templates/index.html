@@ -1,52 +1,141 @@
 {% extends "base.html" %}
 {% block title %}iCond - Reservas{% endblock %}
 {% block content %}
-<h1>Reservas</h1>
 
-<div class="card">
-    <div class="card-header">
-        <h2>Nova Reserva</h2>
+<!-- Page Header -->
+<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:24px;" class="animate-in">
+    <div>
+        <h1 style="margin-bottom:4px;">Reservas</h1>
+        <p style="font-size:14px; color:var(--text-secondary);">Gerencie suas reservas automaticas no iCondominio</p>
     </div>
-    <form action="/reservations" method="post" class="submit-form">
-        <div class="form-grid">
-            <div class="form-group">
-                <label for="resource_id">Recurso</label>
-                <select name="resource_id" id="resource_id" required>
-                    {% for r in resources %}
-                    <option value="{{ r.id }}">{{ r.name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="target_date">Data Desejada</label>
-                <input type="date" name="target_date" id="target_date" required min="{{ today }}" value="{{ today[:4] }}-">
-            </div>
-            <div class="form-group">
-                <label for="reason">Motivo <span class="optional">(opcional)</span></label>
-                <input type="text" name="reason" id="reason" placeholder="Ex: Aniversario do Joao" maxlength="200">
-            </div>
-            <div class="form-group">
-                <button type="submit" class="btn-primary" style="margin-top:auto;">Agendar Reserva</button>
-            </div>
-        </div>
-    </form>
 </div>
 
-<div class="card">
-    <div class="card-header">
-        <h2>Minhas Reservas</h2>
+<!-- Stats Cards -->
+{% if reservations %}
+<div class="stats-row animate-in">
+    <div class="stat-card stat-total">
+        <div class="stat-card-value">{{ total_count }}</div>
+        <div class="stat-card-label">Total</div>
+    </div>
+    <div class="stat-card stat-scheduled">
+        <div class="stat-card-value">{{ status_counts.get('scheduled', 0) + status_counts.get('pending', 0) }}</div>
+        <div class="stat-card-label">Agendadas</div>
+    </div>
+    <div class="stat-card stat-success">
+        <div class="stat-card-value">{{ status_counts.get('success', 0) }}</div>
+        <div class="stat-card-label">Concluidas</div>
+    </div>
+    <div class="stat-card stat-failed">
+        <div class="stat-card-value">{{ status_counts.get('failed', 0) + status_counts.get('cancelled', 0) }}</div>
+        <div class="stat-card-label">Falhas/Canc.</div>
+    </div>
+</div>
+{% endif %}
+
+<!-- New Reservation Form Card -->
+<div class="card card-accent animate-in">
+    <div class="card-header-bar" style="background:linear-gradient(135deg, var(--primary-light) 0%, var(--accent-light) 100%); border-bottom-color:var(--primary-subtle);">
+        <h2 style="display:flex; align-items:center; gap:8px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+            Nova Reserva
+        </h2>
+    </div>
+    <div class="card-body">
+        <form action="/reservations" method="post" class="submit-form">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="resource_id">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                        Recurso
+                    </label>
+                    <select name="resource_id" id="resource_id" required>
+                        <option value="" disabled selected>Selecione um recurso...</option>
+                        {% for r in resources %}
+                        <option value="{{ r.id }}">{{ r.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="target_date">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                        Data Desejada
+                    </label>
+                    <input type="date" name="target_date" id="target_date" required min="{{ today }}">
+                </div>
+                <div class="form-group">
+                    <label for="reason">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/></svg>
+                        Motivo <span class="optional">(opcional)</span>
+                    </label>
+                    <input type="text" name="reason" id="reason" placeholder="Ex: Aniversario do Joao" maxlength="200">
+                </div>
+                <div class="form-group" style="justify-content:flex-end;">
+                    <button type="submit" class="btn-primary" style="height:42px;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                        Agendar Reserva
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Reservations List Card -->
+<div class="card animate-in">
+    <div class="card-header-bar">
+        <h2 style="display:flex; align-items:center; gap:8px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Minhas Reservas
+        </h2>
         {% if reservations %}
-        <span style="color:var(--text-secondary); font-size:13px;">{{ reservations|length }} reserva{{ 's' if reservations|length > 1 else '' }}</span>
+        <span class="badge-count">{{ reservations|length }} reserva{{ 's' if reservations|length > 1 else '' }}</span>
         {% endif %}
     </div>
+
     {% if reservations %}
-    <div class="table-wrap">
+
+    <!-- Filter Tabs -->
+    <div style="padding:12px 24px 0;">
+        <div class="filter-tabs">
+            <button class="filter-tab active" data-status="all" onclick="filterReservations('all')">
+                Todas <span class="tab-count">{{ total_count }}</span>
+            </button>
+            {% if status_counts.get('scheduled', 0) + status_counts.get('pending', 0) > 0 %}
+            <button class="filter-tab" data-status="scheduled" onclick="filterReservations('scheduled')">
+                Agendadas <span class="tab-count">{{ status_counts.get('scheduled', 0) + status_counts.get('pending', 0) }}</span>
+            </button>
+            {% endif %}
+            {% if status_counts.get('executing', 0) > 0 %}
+            <button class="filter-tab" data-status="executing" onclick="filterReservations('executing')">
+                Executando <span class="tab-count">{{ status_counts.get('executing', 0) }}</span>
+            </button>
+            {% endif %}
+            {% if status_counts.get('success', 0) > 0 %}
+            <button class="filter-tab" data-status="success" onclick="filterReservations('success')">
+                Concluidas <span class="tab-count">{{ status_counts.get('success', 0) }}</span>
+            </button>
+            {% endif %}
+            {% if status_counts.get('failed', 0) > 0 %}
+            <button class="filter-tab" data-status="failed" onclick="filterReservations('failed')">
+                Falhas <span class="tab-count">{{ status_counts.get('failed', 0) }}</span>
+            </button>
+            {% endif %}
+            {% if status_counts.get('cancelled', 0) > 0 %}
+            <button class="filter-tab" data-status="cancelled" onclick="filterReservations('cancelled')">
+                Canceladas <span class="tab-count">{{ status_counts.get('cancelled', 0) }}</span>
+            </button>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Desktop Table -->
+    <div class="table-wrap desktop-table">
     <table>
         <thead>
             <tr>
                 <th>#</th>
                 <th>Recurso</th>
-                <th>Data</th>
+                <th>Data Alvo</th>
                 <th>Motivo</th>
                 <th>Trigger</th>
                 <th>Status</th>
@@ -56,21 +145,54 @@
         </thead>
         <tbody>
             {% for res in reservations %}
-            <tr>
-                <td><a href="/reservations/{{ res.id }}" style="font-weight:600;">#{{ res.id }}</a></td>
-                <td>{{ res.resource.name if res.resource else '-' }}</td>
-                <td style="white-space:nowrap;">{{ res.target_date.strftime('%d/%m/%Y') }}</td>
-                <td>{{ res.reason or '-' }}</td>
-                <td style="white-space:nowrap;">{{ res.trigger_date.strftime('%d/%m/%Y') }}</td>
-                <td><span class="status status-{{ res.status }}">{{ res.status }}</span></td>
-                <td>{{ res.attempt_count }}</td>
+            {% set row_status = 'scheduled' if res.status in ('pending', 'scheduled') else res.status %}
+            <tr data-status="{{ row_status }}">
+                <td>
+                    <a href="/reservations/{{ res.id }}" style="font-weight:700; color:var(--primary);">#{{ res.id }}</a>
+                </td>
+                <td>
+                    <span class="font-semibold">{{ res.resource.name if res.resource else '-' }}</span>
+                </td>
+                <td class="nowrap">
+                    <span class="font-semibold">{{ res.target_date.strftime('%d/%m/%Y') }}</span>
+                    {% set days_until = (res.target_date - today_date).days if today_date else none %}
+                    {% if days_until is not none and days_until >= 0 and res.status in ('pending', 'scheduled') %}
+                    <br><span style="font-size:12px; color:var(--text-tertiary);">em {{ days_until }} dia{{ 's' if days_until != 1 else '' }}</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if res.reason %}
+                    <span style="color:var(--text-secondary);">{{ res.reason }}</span>
+                    {% else %}
+                    <span style="color:var(--text-tertiary);">-</span>
+                    {% endif %}
+                </td>
+                <td class="nowrap">
+                    {{ res.trigger_date.strftime('%d/%m/%Y') }}
+                    {% set trigger_days = (res.trigger_date - today_date).days if today_date else none %}
+                    {% if trigger_days is not none and trigger_days >= 0 and res.status in ('pending', 'scheduled') %}
+                    <br><span style="font-size:12px; color:var(--text-tertiary);">em {{ trigger_days }} dia{{ 's' if trigger_days != 1 else '' }}</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <span class="status status-{{ res.status }}">{{ sl(res.status) }}</span>
+                </td>
+                <td>
+                    {% if res.attempt_count > 0 %}
+                    <span class="text-mono">{{ res.attempt_count }}</span>
+                    {% else %}
+                    <span style="color:var(--text-tertiary);">-</span>
+                    {% endif %}
+                </td>
                 <td>
                     <div class="actions">
-                        <a href="/reservations/{{ res.id }}" class="btn btn-outline btn-sm">Ver</a>
+                        <a href="/reservations/{{ res.id }}" class="btn btn-ghost btn-sm btn-icon" title="Ver detalhes">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </a>
                         {% if res.status in ('pending', 'scheduled') %}
-                        <button type="button" class="btn btn-danger btn-sm"
+                        <button type="button" class="btn btn-ghost btn-sm btn-icon" style="color:var(--danger);" title="Cancelar"
                             onclick="confirmAction('/reservations/{{ res.id }}/cancel', 'Cancelar Reserva', 'Tem certeza que deseja cancelar a reserva #{{ res.id }} ({{ res.resource.name }})?')">
-                            Cancelar
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
                         </button>
                         {% endif %}
                     </div>
@@ -80,11 +202,58 @@
         </tbody>
     </table>
     </div>
+
+    <!-- Mobile Cards -->
+    <div class="mobile-cards">
+        {% for res in reservations %}
+        {% set row_status = 'scheduled' if res.status in ('pending', 'scheduled') else res.status %}
+        <div class="mobile-card" data-status="{{ row_status }}">
+            <div class="mobile-card-top">
+                <a href="/reservations/{{ res.id }}" class="mobile-card-id">#{{ res.id }}</a>
+                <span class="status status-{{ res.status }}">{{ sl(res.status) }}</span>
+            </div>
+            <div class="mobile-card-resource">{{ res.resource.name if res.resource else '-' }}</div>
+            {% if res.reason %}
+            <div style="font-size:13px; color:var(--text-secondary); margin-bottom:6px;">{{ res.reason }}</div>
+            {% endif %}
+            <div class="mobile-card-meta">
+                <span class="mobile-card-meta-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    {{ res.target_date.strftime('%d/%m/%Y') }}
+                </span>
+                <span class="mobile-card-meta-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    Trigger: {{ res.trigger_date.strftime('%d/%m/%Y') }}
+                </span>
+                {% if res.attempt_count > 0 %}
+                <span class="mobile-card-meta-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+                    {{ res.attempt_count }} tent.
+                </span>
+                {% endif %}
+            </div>
+            <div class="mobile-card-actions">
+                <a href="/reservations/{{ res.id }}" class="btn btn-outline btn-sm" style="flex:1;">Ver Detalhes</a>
+                {% if res.status in ('pending', 'scheduled') %}
+                <button type="button" class="btn btn-danger btn-sm"
+                    onclick="confirmAction('/reservations/{{ res.id }}/cancel', 'Cancelar Reserva', 'Tem certeza que deseja cancelar a reserva #{{ res.id }} ({{ res.resource.name }})?')">
+                    Cancelar
+                </button>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
     {% else %}
+
+    <!-- Empty State -->
     <div class="empty-state">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-        <p>Nenhuma reserva cadastrada.</p>
-        <p style="font-size:13px; margin-top:4px;">Use o formulario acima para agendar sua primeira reserva.</p>
+        <div class="empty-state-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="10" y1="14" x2="14" y2="14"/></svg>
+        </div>
+        <h3>Nenhuma reserva cadastrada</h3>
+        <p>Use o formulario acima para agendar sua primeira reserva automatica no iCondominio.</p>
     </div>
     {% endif %}
 </div>
