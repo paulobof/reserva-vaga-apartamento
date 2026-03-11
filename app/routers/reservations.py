@@ -11,7 +11,11 @@ from sqlalchemy.orm import selectinload
 
 from app.database import get_db
 from app.models import Reservation, Resource
-from app.services.scheduler import compute_trigger_date, is_within_window, run_reservation
+from app.services.scheduler import (
+    compute_trigger_date,
+    is_within_window,
+    run_reservation,
+)
 
 logger = logging.getLogger("icond.router")
 
@@ -23,12 +27,16 @@ templates = Jinja2Templates(directory="app/templates")
 async def index(request: Request, db: AsyncSession = Depends(get_db)):
     resources = (await db.execute(select(Resource))).scalars().all()
     reservations = (
-        await db.execute(
-            select(Reservation)
-            .options(selectinload(Reservation.resource))
-            .order_by(Reservation.created_at.desc())
+        (
+            await db.execute(
+                select(Reservation)
+                .options(selectinload(Reservation.resource))
+                .order_by(Reservation.created_at.desc())
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
 
     return templates.TemplateResponse(
         "index.html",
@@ -99,9 +107,7 @@ async def cancel_reservation(
     reservation_id: int,
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(
-        select(Reservation).where(Reservation.id == reservation_id)
-    )
+    result = await db.execute(select(Reservation).where(Reservation.id == reservation_id))
     reservation = result.scalar_one_or_none()
     if reservation and reservation.status in ("pending", "scheduled"):
         reservation.status = "cancelled"
@@ -116,9 +122,7 @@ async def execute_now(
     reservation_id: int,
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(
-        select(Reservation).where(Reservation.id == reservation_id)
-    )
+    result = await db.execute(select(Reservation).where(Reservation.id == reservation_id))
     reservation = result.scalar_one_or_none()
     if reservation and reservation.status in ("pending", "scheduled"):
         asyncio.create_task(run_reservation(reservation.id))

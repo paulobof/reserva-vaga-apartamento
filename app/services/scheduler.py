@@ -8,7 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
 from app.database import async_session
-from app.models import Reservation, Resource
+from app.models import Reservation
 from app.services.icondominio import ICondominioClient
 from app.services.notifier import send_whatsapp
 

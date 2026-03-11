@@ -15,7 +15,7 @@ class Resource(Base):
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     recurso_id: Mapped[int] = mapped_column(Integer, nullable=False)
     periodo_id: Mapped[int] = mapped_column(Integer, nullable=False)
-    hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    hash: Mapped[str | None] = mapped_column(String(64), nullable=True, default=None)
 
     reservations: Mapped[list["Reservation"]] = relationship(back_populates="resource")
 
@@ -45,9 +45,7 @@ class AttemptLog(Base):
     __tablename__ = "attempt_logs"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    reservation_id: Mapped[int] = mapped_column(
-        ForeignKey("reservations.id"), nullable=False
-    )
+    reservation_id: Mapped[int] = mapped_column(ForeignKey("reservations.id"), nullable=False)
     attempt_number: Mapped[int] = mapped_column(Integer, nullable=False)
     timestamp: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     step: Mapped[str] = mapped_column(String(20), nullable=False)
