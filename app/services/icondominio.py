@@ -5,6 +5,7 @@ login → redirect → authenticate → warmup → condicao → conclusao.
 """
 
 import asyncio
+import html as html_mod
 import logging
 import re
 import time
@@ -202,9 +203,7 @@ class ICondominioClient:
         client = await self._ensure_client()
         start = time.perf_counter()
 
-        await client.get(
-            f"{BASE_URL}/Reservas/Index", cookies=cookies, follow_redirects=True
-        )
+        await client.get(f"{BASE_URL}/Reservas/Index", cookies=cookies, follow_redirects=True)
         await client.get(
             f"{BASE_URL}/Reservas/RecursoData/{recurso_id}",
             cookies=cookies,
@@ -273,7 +272,7 @@ class ICondominioClient:
                 continue
 
             if attr_type == "hidden":
-                fields[attr_name] = attr_value or ""
+                fields[attr_name] = html_mod.unescape(attr_value) if attr_value else ""
             elif attr_type == "checkbox":
                 # Check all checkboxes (simulate clicking "Concordo")
                 fields[attr_name] = "on"
@@ -295,9 +294,7 @@ class ICondominioClient:
         )
         return True, fields
 
-    async def submit(
-        self, cookies: httpx.Cookies, fields: dict[str, str]
-    ) -> tuple[bool, str]:
+    async def submit(self, cookies: httpx.Cookies, fields: dict[str, str]) -> tuple[bool, str]:
         """Submete o formulário de conclusão da reserva.
 
         Args:
@@ -318,9 +315,7 @@ class ICondominioClient:
             follow_redirects=True,
         )
         html = resp.text
-        success = (
-            "reserva agendada com sucesso" in html.lower() or "sucesso" in html.lower()
-        )
+        success = "reserva agendada com sucesso" in html.lower() or "sucesso" in html.lower()
         snippet = html[:500]
         duration_ms = (time.perf_counter() - start) * 1000
 
@@ -455,9 +450,7 @@ class ICondominioClient:
                     await asyncio.sleep(RETRY_INTERVAL_SECONDS)
 
             except Exception as e:
-                await self._log_attempt(
-                    db, reservation, attempt, "error", False, error=str(e)
-                )
+                await self._log_attempt(db, reservation, attempt, "error", False, error=str(e))
                 logger.warning(
                     "Attempt %d/%d error: %s",
                     attempt,
