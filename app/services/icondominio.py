@@ -4,7 +4,6 @@ import re
 from datetime import date, datetime
 
 import httpx
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
@@ -38,16 +37,21 @@ class ICondominioClient:
         client = await self._ensure_client()
         resp = await client.post(
             LOGIN_URL,
-            json={"APP": 34, "Login": settings.icond_login, "Senha": settings.icond_senha},
+            json={
+                "APP": 34,
+                "Login": settings.icond_login,
+                "Senha": settings.icond_senha,
+            },
             headers={"Content-Type": "application/json"},
         )
         resp.raise_for_status()
         data = resp.json()
-        if data.get("Codigo") != 0:
+        niu = data.get("NIU")
+        token = data.get("Token")
+        if not niu or not token:
             raise RuntimeError(f"Login failed: {data}")
-        niu = str(data["NIU"])
-        token = data["Token"]
-        logger.info("Login OK - NIU=%s", niu)
+        niu = str(niu)
+        logger.info("Login OK - NIU=%s", niu[:12])
         return niu, token
 
     async def redirect(self, niu: str, token: str) -> str:
@@ -83,6 +87,7 @@ class ICondominioClient:
                 location = resp.headers.get("location", "")
                 if location.startswith("/"):
                     from urllib.parse import urlparse
+
                     parsed = urlparse(url)
                     location = f"{parsed.scheme}://{parsed.netloc}{location}"
                 url = location
@@ -95,7 +100,9 @@ class ICondominioClient:
     async def warmup(self, cookies: httpx.Cookies, recurso_id: int):
         """Step 4: Hit Index + RecursoData to warm up session."""
         client = await self._ensure_client()
-        await client.get(f"{BASE_URL}/Reservas/Index", cookies=cookies, follow_redirects=True)
+        await client.get(
+            f"{BASE_URL}/Reservas/Index", cookies=cookies, follow_redirects=True
+        )
         await client.get(
             f"{BASE_URL}/Reservas/RecursoData/{recurso_id}",
             cookies=cookies,
@@ -148,7 +155,9 @@ class ICondominioClient:
         logger.info("Condicao OK - %d hidden fields parsed", len(fields))
         return True, fields
 
-    async def submit(self, cookies: httpx.Cookies, fields: dict[str, str]) -> tuple[bool, str]:
+    async def submit(
+        self, cookies: httpx.Cookies, fields: dict[str, str]
+    ) -> tuple[bool, str]:
         """Step 6: POST Conclusao with hidden fields."""
         client = await self._ensure_client()
         resp = await client.post(
@@ -159,7 +168,9 @@ class ICondominioClient:
             follow_redirects=True,
         )
         html = resp.text
-        success = "reserva agendada com sucesso" in html.lower() or "sucesso" in html.lower()
+        success = (
+            "reserva agendada com sucesso" in html.lower() or "sucesso" in html.lower()
+        )
         snippet = html[:500]
         logger.info("Submit result: success=%s", success)
         return success, snippet
@@ -197,20 +208,31 @@ class ICondominioClient:
 
             try:
                 available, fields = await self.get_condicao(
-                    cookies, reservation.target_date, resource.recurso_id, resource.periodo_id
+                    cookies,
+                    reservation.target_date,
+                    resource.recurso_id,
+                    resource.periodo_id,
                 )
                 if not available:
                     await self._log_attempt(
-                        db, reservation, attempt, "condicao", False,
-                        error="Data não disponível ainda"
+                        db,
+                        reservation,
+                        attempt,
+                        "condicao",
+                        False,
+                        error="Data não disponível ainda",
                     )
                     if attempt < max_attempts:
                         await asyncio.sleep(1)
                     continue
 
                 await self._log_attempt(
-                    db, reservation, attempt, "condicao", True,
-                    snippet=f"{len(fields)} fields parsed"
+                    db,
+                    reservation,
+                    attempt,
+                    "condicao",
+                    True,
+                    snippet=f"{len(fields)} fields parsed",
                 )
 
                 success, snippet = await self.submit(cookies, fields)

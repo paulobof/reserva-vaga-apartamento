@@ -25,6 +25,6 @@ async def send_whatsapp(message: str):
                 headers={"apikey": settings.evolution_api_key},
             )
             resp.raise_for_status()
-            logger.info("WhatsApp sent: %s", message[:50])
+            logger.info("WhatsApp sent: %s", message[:120])
     except Exception as e:
         logger.error("Failed to send WhatsApp: %s", e)
